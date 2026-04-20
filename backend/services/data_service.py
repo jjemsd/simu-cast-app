@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np
+
 
 def load_dataframe(filepath: str) -> pd.DataFrame:
     if filepath.endswith(".csv"):
