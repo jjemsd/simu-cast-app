@@ -3,6 +3,8 @@ import numpy as np
 
 def load_dataframe(filepath: str) -> pd.DataFrame:
     if filepath.endswith(".csv"):
+        # Ordered from strictest to most permissive: utf-8 first, then BOM variant,
+        # then Windows/Excel default (cp1252), then latin-1 which accepts any byte.
         for encoding in ("utf-8", "utf-8-sig", "cp1252", "latin-1"):
             try:
                 return pd.read_csv(filepath, encoding=encoding)
