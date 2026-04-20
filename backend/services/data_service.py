@@ -3,7 +3,14 @@ import numpy as np
 
 def load_dataframe(filepath: str) -> pd.DataFrame:
     if filepath.endswith(".csv"):
-        return pd.read_csv(filepath)
+        # Ordered from strictest to most permissive: utf-8 first, then BOM variant,
+        # then Windows/Excel default (cp1252), then latin-1 which accepts any byte.
+        for encoding in ("utf-8", "utf-8-sig", "cp1252", "latin-1"):
+            try:
+                return pd.read_csv(filepath, encoding=encoding)
+            except UnicodeDecodeError:
+                continue
+        raise ValueError("Unable to decode CSV file with supported encodings")
     elif filepath.endswith((".xlsx", ".xls")):
         return pd.read_excel(filepath)
     raise ValueError("Unsupported file format")

@@ -1,8 +1,24 @@
-from fastapi import FastAPI
+import logging
+import traceback
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from routers import upload, cleaning, stats, normality, modeling, simulation, ai
 
+logger = logging.getLogger("simucast")
+
 app = FastAPI(title="SimuCast API", version="1.0.0")
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    # Log the full traceback server-side, return a clean JSON body to the client.
+    logger.error("Unhandled error on %s %s\n%s", request.method, request.url.path, traceback.format_exc())
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "error": str(exc)},
+    )
 
 app.add_middleware(
     CORSMiddleware,
