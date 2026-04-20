@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 
@@ -37,3 +38,9 @@ def get_column_info(df: pd.DataFrame) -> list:
             "unique": int(df[col].nunique())
         })
     return info
+
+
+def df_to_records(df: pd.DataFrame) -> list[dict]:
+    # JSON can't represent NaN/Inf. Coerce them to None so FastAPI can serialize.
+    cleaned = df.replace([np.inf, -np.inf], np.nan).astype(object)
+    return cleaned.where(pd.notnull(cleaned), None).to_dict(orient="records")

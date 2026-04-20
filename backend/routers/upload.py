@@ -5,7 +5,7 @@ import pandas as pd
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from database import load_session, save_session
-from services.data_service import get_column_info, load_dataframe
+from services.data_service import df_to_records, get_column_info, load_dataframe
 
 router = APIRouter()
 
@@ -49,7 +49,7 @@ async def upload_file(file: UploadFile = File(...)):
         "rows": len(df),
         "columns": len(df.columns),
         "column_info": col_info,
-        "preview": df.head(5).to_dict(orient="records"),
+        "preview": df_to_records(df.head(5)),
     }
 
 
@@ -60,7 +60,7 @@ def get_full_data():
         raise HTTPException(status_code=404, detail="No dataset loaded")
     df = pd.read_json(session["current_data"])
     return {
-        "data": df.to_dict(orient="records"),
+        "data": df_to_records(df),
         "columns": list(df.columns),
         "rows": len(df),
     }
