@@ -1,18 +1,29 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from services.data_service import load_dataframe, get_column_info
-from database import save_session, load_session
-import os, shutil
+import os
+import shutil
+
+import pandas as pd
+from fastapi import APIRouter, File, HTTPException, UploadFile
+
+from database import load_session, save_session
+from services.data_service import get_column_info, load_dataframe
 
 router = APIRouter()
 
+ALLOWED_EXTS = {".csv", ".xlsx", ".xls"}
+UPLOAD_DIR = "uploads"
+
+
 @router.post("/")
 async def upload_file(file: UploadFile = File(...)):
-    allowed = [".csv", ".xlsx", ".xls"]
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in allowed:
+    # Strip any path components from the client-supplied filename to prevent
+    # path traversal (e.g. "../../etc/passwd").
+    safe_name = os.path.basename(file.filename or "")
+    ext = os.path.splitext(safe_name)[1].lower()
+    if ext not in ALLOWED_EXTS:
         raise HTTPException(status_code=400, detail="Only CSV and Excel files allowed")
 
-    path = f"uploads/{file.filename}"
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    path = os.path.join(UPLOAD_DIR, safe_name)
     with open(path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
@@ -23,27 +34,27 @@ async def upload_file(file: UploadFile = File(...)):
     col_info = get_column_info(df)
 
     session = {
-        "filename": file.filename,
+        "filename": safe_name,
         "filepath": path,
         "original_data": df.to_json(),
         "current_data": df.to_json(),
         "cleaning_log": [],
-        "column_info": col_info
+        "column_info": col_info,
     }
     save_session(session)
 
     return {
         "message": "File uploaded successfully",
-        "filename": file.filename,
+        "filename": safe_name,
         "rows": len(df),
         "columns": len(df.columns),
         "column_info": col_info,
-        "preview": df.head(5).to_dict(orient="records")
+        "preview": df.head(5).to_dict(orient="records"),
     }
+
 
 @router.get("/data")
 def get_full_data():
-    import pandas as pd
     session = load_session()
     if not session:
         raise HTTPException(status_code=404, detail="No dataset loaded")
@@ -51,5 +62,5 @@ def get_full_data():
     return {
         "data": df.to_dict(orient="records"),
         "columns": list(df.columns),
-        "rows": len(df)
+        "rows": len(df),
     }
