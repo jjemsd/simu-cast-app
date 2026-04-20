@@ -16,7 +16,10 @@ async def upload_file(file: UploadFile = File(...)):
     with open(path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    df = load_dataframe(path)
+    try:
+        df = load_dataframe(path)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     col_info = get_column_info(df)
 
     session = {
