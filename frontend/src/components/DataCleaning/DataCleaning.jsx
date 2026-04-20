@@ -30,7 +30,8 @@ export default function DataCleaning() {
   }
 
   const handleExport = () => {
-    window.open('/api/cleaning/export', '_blank')
+    const base = import.meta.env.VITE_API_URL || ''
+    window.open(`${base}/api/cleaning/export`, '_blank')
   }
 
   if (loading) return (
